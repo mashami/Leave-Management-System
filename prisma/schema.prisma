@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  name        String @unique
+  email       String @unique
+  password    String
+  leaveNumber Int    @default(20)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  announcements Announcement[]
+  users         User[]
+  departments   Department[]
+  Leave         Leave[]
+  messages      Message[]
+}
+
+model Department {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  name      String @unique
+  companyId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  Company Company @relation(fields: [companyId], references: [id])
+
+  users        User[]
+  leaves       Leave[]
+  invitations  Invitation[]
+  announcement Announcement[]
+  messages     Message[]
+
+  @@index([companyId, name])
+}
+
+model User {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  email          String
+  password       String
+  companyId      String? @db.ObjectId
+  departmentId   String? @db.ObjectId
+  companyLeaves  Int     @default(0)
+  remainingLeave Int     @default(0)
+  departmentName String?
+  isActive       Boolean @default(false)
+
+  role       Role        @default(Staff)
+  Company    Company?    @relation(fields: [companyId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  leave Leave[]
+
+  @@index([companyId, email])
+}
+
+model Leave {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  email          String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  title          String
+  description    String
+  status         Status   @default(Pending)
+  departmentName String
+  userId         String?  @db.ObjectId
+  companyId      String   @db.ObjectId
+  departmentId   String?  @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  User       User?       @relation(fields: [userId], references: [id])
+  Company    Company?    @relation(fields: [companyId], references: [id])
+  Department Department? @relation(fields: [departmentId], references: [id])
+
+  @@index([companyId, departmentId])
+}
+
+model Invitation {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  email          String  @unique
+  isActive       Boolean @default(true)
+  companyId      String  @db.ObjectId
+  departmentId   String? @db.ObjectId
+  departmentName String?
+  role           Role
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  Department Department? @relation(fields: [departmentId], references: [id])
+}
+
+model Announcement {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  owner       String
+  description String
+  companyId   String?     @db.ObjectId
+  belong      BelongType? @default(all)
+
+  Company      Company?    @relation(fields: [companyId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @default(now())
+  Department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?     @db.ObjectId
+
+  @@index([companyId])
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  owner     String
+  text      String
+  companyId String?  @db.ObjectId
+
+  Company      Company?    @relation(fields: [companyId], references: [id])
+  Department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?     @db.ObjectId
+
+  @@index([departmentId])
+}
+
+enum Role {
+  Admin
+  manager
+  Staff
+}
+
+enum Status {
+  Pending
+  IsApproved
+  Rejected
+}
+
+enum BelongType {
+  all
+  managers
+}
+
+//npx prisma db push
