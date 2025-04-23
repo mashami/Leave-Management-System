@@ -55,7 +55,7 @@ const InviteDialog = ({
     if (!isEmailValid(email)) {
       return toast({
         variant: "destructive",
-        description: "Provide Valid email"
+        description: " Invalid email"
       });
     }
 
